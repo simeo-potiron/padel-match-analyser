@@ -1,0 +1,5 @@
+streamlit
+pandas
+pyairtable
+google-cloud-storage
+plotly

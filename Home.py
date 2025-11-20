@@ -1,6 +1,5 @@
 import streamlit as st
 import json
-import time
 from utils import require_login, get_matches, upsert_match, get_match_data, delete_video_from_gcs
 
 st.set_page_config(page_title="Home", layout="wide")
