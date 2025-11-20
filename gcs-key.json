@@ -1,0 +1,13 @@
+{
+    "type": "service_account",
+    "project_id": "padel-478615",
+    "private_key_id": "145a46d32407d9bcc4e90f5ff2c91b6e46300182",
+    "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC7Kp8x7bvxLcwu\n7mwOmHlu6+SqeDVNhTUspDOFdMxofUPHJXHPHOpKH/7pWrjPJuTtneuhRXVcj543\nSkuOysSUW7jsxv7sF8b61NtTNz0A2Vuhz0F8jbhP0Ii4GBb8OaSgO2uUXj8Yz1yO\nZpc9FRfafmOzLZOA+SZjvTuhtBGfTj0OlaJ6VjS5ahX1EUDmuNw7qZeUUuYmO0A1\nsEAF2gswcpDYXg35+OvyYpwhoDfvSU/PacIDQR6FPxCTsA2Ry3741Kw7xF/Sd/MG\n6QfmC92XKSeB2mPy1I/rSkPXg/12RUW5E2XI3Phz/hMTGr78lPvLB5IAokJ5vmS/\nMOB8IZh1AgMBAAECggEAB7wF6p4IpXmPRcQ4Bm1iHUWVxD6l8z9lOGRLtcDjHpFI\nnv7q4lRvUSNb2SBU4UiZ7sDXJymz5SCROPcywqKZ94iHzo8Vo0ODR0PLEXgHpxSU\nXw4txlwj6PZ04+io8IDgTvfNpQq1AE03ZbITH2TTAMY20AV64jpJjhcYkwDaNpNG\nn/58xAkKfx3BxRxlk45KV5tVroNEWDPR6ke0Qzi+jBxxR38ynTKMOc+JhPVhl7fq\n5LCXjznZtwAdCm71p7JReLHAyIpS8DCqXGZGRvk0BcYdG0LDsU+d+aRyKq1F5M3d\nutxNrkrgviKMGK7N+cOXO2jvQk37K42mwDeK8XancQKBgQD5Gfg+w0I0oiM56Uqq\nKciJ9e9nBHo9J/mY3rmqT6+n7liarBBuKYeYL5RucCbHjlVXc7n+cTQu3WtBTS+r\nIVzOHuXn725/+KjrTIGdEmyte63zi6rVyigDg3uxin7TTLlSgPzKZFDRkxvgURdT\nlyyy2JuyfbuYxnO1gnWdCT4FRQKBgQDAWY7U4l2cBTLIlg0umTh0T7r3RRrRdAUx\ndNJ4yyxe+I+oJch5VBQVpaqhEAiL5mYrrPTo5t9bSZnompsghCTBcH3JZgNCv07Z\nHuVbQPFm+1pp7JqED6SCpRE069Rb5jg4cB2M/fsxZKwzuogSXqqGPztLXdL68TMS\nUBruqIwBcQKBgQDQrbbPLVgrK6EDBLLt9m7vVD4oORIGZZStQfib+oGW1w8XFAn3\nn4beMQ3RrtZt2okX5/TqeP9UO118qSLD5AERE8VaFbSmNDOeWstCQIsWkkPZgSmu\nS9pVhzJ6OyGf9ehSe4hKLNuflfOGaah2+HATq25Tiw07IRUR+6Z31aRFWQKBgHGi\nNvRjSsQKeibwJpd541UraRv9kktdDFhcWJ8OAIeWtl+y+o1a84aaWYRPUY08ru1s\nfz88bYWjpK468Bw0lPZGe7lIb/K1zGIOk5bmdfbN1WswYVRVXW3lEJZAIDOufVYy\nPfL2dLiIbgcdUpfvnzQyFNiAdEzVw8M02cRWhGexAoGBANCHRX+acB6jJKKYo5Nm\nZVLzdMpF0/u8MmZVLlFvRM4asj9tvKVEPT1mWjVCA9267q/695kfRB7JR5aEp+ow\ndNDgjwR83SMVQWoOQbw665X4+MEnIkUd05Ug+0NbdxoeGR8KPYq9/I5UxI3nTuCW\nvrE8ZoEaBpzH1pZ18CqfP6n2\n-----END PRIVATE KEY-----\n",
+    "client_email": "padel-streamlit-gcs@padel-478615.iam.gserviceaccount.com",
+    "client_id": "107267410245121869301",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/padel-streamlit-gcs%40padel-478615.iam.gserviceaccount.com",
+    "universe_domain": "googleapis.com"
+  }
