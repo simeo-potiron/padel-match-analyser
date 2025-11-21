@@ -22,7 +22,7 @@ AT_TABLES = {
 # -----------------------------------------------------
 # CONFIGURATION GCS
 # -----------------------------------------------------
-GCS_INFO = st.secrets["google-service_account"]
+GCS_INFO = st.secrets["google-service-account"]
 BUCKET_NAME = "padel-matchs"
 
 # -----------------------------------------------------
