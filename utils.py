@@ -7,7 +7,7 @@ import uuid
 # -----------------------------------------------------
 # CONFIGURATION Airtable
 # -----------------------------------------------------
-AT_TOKEN = st.secrets(["airtable"]["token"])
+AT_TOKEN = st.secrets["airtable"]["token"]
 AT_TABLES = {
     "Users": {
         "base": "appHpJoih6uBVyjyC",
