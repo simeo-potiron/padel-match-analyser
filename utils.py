@@ -36,7 +36,8 @@ def login(email, password):
     # Connexion à Airtable
     table = at.Table(AT_TOKEN, AT_TABLES["Users"]["base"], AT_TABLES["Users"]["table"])
     
-    # Récupération des records correspondant 
+    # Récupération des records correspondant
+    email = email.lower()
     formula = f"AND( {{email}} = '{email}', {{password}} = '{password}' )"
     user = table.first(formula=formula)
 
@@ -51,6 +52,7 @@ def signin(email, password):
     table = at.Table(AT_TOKEN, AT_TABLES["Users"]["base"], AT_TABLES["Users"]["table"])
     
     # Récupération des records correspondant à l'email
+    email = email.lower()
     formula = f"{{email}} = '{email}'"
     user = table.first(formula=formula)
 

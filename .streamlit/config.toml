@@ -3,3 +3,6 @@ showSidebarNavigation = false
 
 [server]
 maxUploadSize = 400
+
+[secrets]
+files = [ ".streamlit/secrets.toml"]

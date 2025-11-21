@@ -33,7 +33,7 @@ elif "displayed_matches" not in st.session_state:
     st.session_state.displayed_matches = DEFAULT_DISPLAYED_MATCHES
 
 matches = get_matches(st.session_state["token"])
-matches.sort(reverse=True, key=lambda x: x.get("fields").get("date") + x.get("fields").get("name"))
+matches.sort(reverse=True, key=lambda x: x.get("fields").get("date", "") + x.get("fields").get("name", ""))
 cmpt = 0
 for match in matches[:st.session_state.displayed_matches]:
     cmpt += 1
