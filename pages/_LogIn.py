@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import login, send_reset_password_email
+from utils import login, send_email
 
 st.set_page_config(page_title="LogIn", page_icon="🎾", layout="centered")
 
