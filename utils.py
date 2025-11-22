@@ -49,16 +49,18 @@ def login(email, password):
     else:
         return None
 
-def signin(email, password):
+def check_email(email):
     # Connexion à Airtable
     table = at.Table(AT_TOKEN, AT_TABLES["Users"]["base"], AT_TABLES["Users"]["table"])
     
     # Récupération des records correspondant à l'email
     email = email.lower()
     formula = f"{{email}} = '{email}'"
-    user = table.first(formula=formula)
+    return table.first(formula=formula)
 
+def signin(email, password):
     # Check si le user existe déjà
+    user = check_email(email)
     if user:
         if password == user.get("fields").get("password"):
             return {"token": user.get("id")}
@@ -73,15 +75,15 @@ def signin(email, password):
         new_user = table.create(new_user_hash)
         return {"token": new_user.get("id")}
 
-def update_password(token, password):
+def update_user(token, user_hash):
     # Connexion à Airtable
     table = at.Table(AT_TOKEN, AT_TABLES["Users"]["base"], AT_TABLES["Users"]["table"])
 
     # Mise à jour du record
-    updated_user = table.update(token, {"password": password})
+    updated_user = table.update(token, user_hash)
     return {"token": updated_user.get("id")}
 
-def send_email(to_email, type):
+def send_email(to_email, type, reset_link=None):
     # Retrieve SMTP elements from streamlit secrets
     smtp_server = st.secrets["email"]["smtp_server"]
     smtp_port = st.secrets["email"]["smtp_port"]
@@ -90,30 +92,48 @@ def send_email(to_email, type):
     
     # Prepare email content and topic
     sender = "Padel match analyser <simeopot@gmail.com>"
-    if type == "reset_password":
-        topic = "Reset your password"
-        content = "Clic on this link and reset your password"
+    if type == "reset_password" and reset_link:
+        topic = "Réinitialisez votre mot de passe"
+        content = f"Cliquez sur ce lien pour réinitialiser votre mot de passe : {reset_link}"
+        html_content = f"""\
+        <html>
+        <body>
+            <p>Bonjour,</p>
+            <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+            <p>Cliquez sur le lien ci-dessous pour continuer. Ce lien expirera dans 60 minutes :</p>
+            <a href="{reset_link}">Réinitialiser mon mot de passe</a>
+            <p>Si vous n'avez pas demandé cette réinitialisation, veuillez ignorer cet e-mail.</p>
+        </body>
+        </html>
+        """
     else:
-        topic, content = None, None
+        topic, content, html_content = None, None
 
-    # Create a text/plain message
+    # Create a text/plain message and send it
     if topic and content and to_email:
+        # Prepare email
         msg = EmailMessage()
         msg.set_content(content)
+        if html_content:
+            msg.add_alternative(html_content, subtype='html')
         msg['Subject'] = topic
         msg['From'] = sender
         msg['To'] = to_email
-
-
+        # Send email
         with smtplib.SMTP_SSL(smtp_server, smtp_port) as smtp:
             smtp.login(sender_email, app_password)
             smtp.send_message(msg)
             smtp.quit()
-
-        return {"status": "success", "message": "Email sent successfully"}
-    
+        return {"status": "success"}
     else:
-        return {"status": "failure", "message": "Missing some arguments"}
+        return {"status": "failure"}
+
+def get_user_infos(token):
+    # Connexion à Airtable
+    table = at.Table(AT_TOKEN, AT_TABLES["Users"]["base"], AT_TABLES["Users"]["table"])
+    user = table.get(token)
+
+    return user.get("fields")
 
 # -----------------------------------------------------
 # FUNCTIONS Matches

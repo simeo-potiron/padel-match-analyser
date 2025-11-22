@@ -1,5 +1,7 @@
 import streamlit as st
-from utils import login, send_email
+import time
+from datetime import datetime, timedelta
+from utils import login, update_user, check_email, send_email
 
 st.set_page_config(page_title="LogIn", page_icon="🎾", layout="centered")
 
@@ -14,28 +16,42 @@ st.markdown("""
 
 st.title("Connexion à un compte")
 
-username = st.text_input("Email")
-password = st.text_input("Mot de passe", type="password")
+email = st.text_input("Email")
+mdp = st.text_input("Mot de passe", type="password")
 
 with st.container(horizontal=True):
     # Reset password
-    if st.button("Mot de passe oublié ?", type="tertiary"):
-        rep = send_email(
-            to_email="simeo.potiron@laposte.net", 
-            type="reset_password"
-        )
-        if rep["status"] == "success":
-            st.success(rep["message"])
-        elif rep["status"] == "failure":
-            st.error(rep["message"])
-        else:
-            st.error("Failed to send email")
+    @st.dialog("Réinitialiser votre mot de passe", width="small", dismissible=True, on_dismiss="rerun")
+    def reset_password(previous_email):
+        email_to_reset = st.text_input("Renseigner votre email ici:", value=previous_email or "")
+        if st.button("Réinitialiser"):
+            user = check_email(email_to_reset)
+            if user:
+                user_token = user.get("id")
+                BASE_URL, RESET_PAGE = st.secrets["app"]["base_url"], "Password"
+                reset_link = f"{BASE_URL}/{RESET_PAGE}?token={user_token}"
+                rep = send_email(
+                    to_email="simeo.potiron@laposte.net", 
+                    type="reset_password",
+                    reset_link=reset_link
+                )
+                if rep["status"] == "success":
+                    expiration_time = datetime.now() + timedelta(minutes=60)
+                    update_user(user_token, {"reset_link_expiration_time": expiration_time.strftime("%Y-%m-%d %H:%M:%S")})
+                    st.success("Un mail de réinitialisation vous a été envoyé")
+                elif rep["status"] == "failure":
+                    st.error("Le mail de réinitialisation n'a pas pu être envoyé")
+                time.sleep(3)
+                st.rerun()
+            else:
+                st.error(f"Cet email ne correspond à aucun utilisateur")
 
+    if st.button("Mot de passe oublié ?", type="tertiary"):
+        reset_password(email)
 
     # Login
-    if st.button("Connexion") or password:
-        auth = login(username, password)
-
+    if st.button("Connexion") or (email and mdp):
+        auth = login(email, mdp)
         if auth:
             st.session_state.token = auth["token"]
             st.success("Connexion réussie !")
