@@ -110,10 +110,10 @@ def send_email(to_email, type):
             smtp.send_message(msg)
             smtp.quit()
 
-        print("Email sent")
+        return {"status": "success", "message": "Email sent successfully"}
     
     else:
-        print("Missing arguments")
+        return {"status": "failure", "message": "Missing some arguments"}
 
 # -----------------------------------------------------
 # FUNCTIONS Matches
