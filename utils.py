@@ -110,6 +110,8 @@ def send_email(to_email, type):
             smtp.send_message(msg)
             smtp.quit()
 
+        print("Email sent")
+
 # -----------------------------------------------------
 # FUNCTIONS Matches
 # -----------------------------------------------------
