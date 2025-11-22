@@ -1,7 +1,7 @@
 import streamlit as st
 import time
 from datetime import datetime, timedelta
-from utils import login, update_user, check_email, send_email
+from ..utils import login, update_user, check_email, send_email
 
 st.set_page_config(page_title="LogIn", page_icon="🎾", layout="centered")
 
