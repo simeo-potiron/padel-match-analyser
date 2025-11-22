@@ -89,7 +89,7 @@ def send_email(to_email, type):
     app_password = st.secrets["email"]["app_password"]
     
     # Prepare email content and topic
-    sender = "Padel match analyser"
+    sender = "simeopot@gmail.com"
     if type == "reset_password":
         topic = "Reset your password"
         content = "Clic on this link and reset your password"
