@@ -1,1 +1,1 @@
-from app.templates import *
+from padel-match-analyser.templates import *

@@ -1,3 +1,3 @@
-from app.utils import *
-from app.templates import *
-from app.update_score import point_won
+from padel-match-analyser.utils import *
+from padel-match-analyser.templates import *
+from padel-match-analyser.update_score import point_won
