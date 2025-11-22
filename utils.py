@@ -111,6 +111,9 @@ def send_email(to_email, type):
             smtp.quit()
 
         print("Email sent")
+    
+    else:
+        print("Missing arguments")
 
 # -----------------------------------------------------
 # FUNCTIONS Matches
