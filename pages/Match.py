@@ -194,7 +194,7 @@ def point_details(team):
 l,c,r = st.columns(3)
 with c:
     if st.button("Annuler point précédent", type="primary"):
-        undo_point_won(st.session_state.board)
+        undo_point_won(st.session_state.board):
         st.rerun()
 
 # Attribution des points
@@ -202,16 +202,14 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown(f"### {st.session_state.board['teams']['A']['name']}")
     if st.button("✅ Point gagné", key="point_A"):
-        point_won(st.session_state.board, "A")
-        if st.session_state.board["follow_players_stats"]:
+        if point_won(st.session_state.board, "A") and st.session_state.board["follow_players_stats"]:
             point_details("A")
         else:
             st.rerun()
 with col2:
     st.markdown(f"### {st.session_state.board['teams']['B']['name']}")
     if st.button("✅ Point gagné", key="point_B"):
-        point_won(st.session_state.board, "B")
-        if st.session_state.board["follow_players_stats"]:
+        if point_won(st.session_state.board, "B") and st.session_state.board["follow_players_stats"]:
             point_details("B")
         else:
             st.rerun()
