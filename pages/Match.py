@@ -50,9 +50,6 @@ try:
 except:
     st.switch_page("Home.py")
 
-if "processing" not in st.session_state:
-    st.session_state.processing = False
-
 @st.dialog("Serveur", width="small", dismissible=False, on_dismiss="rerun")
 def choose_server():
     # Check what choices are available
@@ -156,80 +153,64 @@ def point_details(team):
     _, col_c, _ = st.columns(3)
     col_g2, col_d2 = st.columns(2)
     with col_g1:
-        if st.button(f"💪 Coup gagnant de {st.session_state.board['teams'][winner]['player_1']}", disabled=st.session_state.processing):
-            st.session_state.processing = True
+        if st.button(f"💪 Coup gagnant de {st.session_state.board['teams'][winner]['player_1']}"):
             for player in players:
                 if player == f"{winner}1":
                     st.session_state.board["live_stats"][player].append(1)
                 else:
                     st.session_state.board["live_stats"][player].append(0)
-            st.session_state.processing = False
             st.rerun()
     with col_d1:
-        if st.button(f"💪 Coup gagnant {st.session_state.board['teams'][winner]['player_2']}", disabled=st.session_state.processing):
-            st.session_state.processing = True
+        if st.button(f"💪 Coup gagnant {st.session_state.board['teams'][winner]['player_2']}"):
             for player in players:
                 if player == f"{winner}2":
                     st.session_state.board["live_stats"][player].append(1)
                 else:
                     st.session_state.board["live_stats"][player].append(0)
-            st.session_state.processing = False
             st.rerun()
     with col_c:
-        if st.button("🟰 Faute provoquée", disabled=st.session_state.processing):
-            st.session_state.processing = True
+        if st.button("🟰 Faute provoquée"):
             for player in players:
                 st.session_state.board["live_stats"][player].append(0)
-            st.session_state.processing = False
             st.rerun()
     with col_g2:
-        if st.button(f"❌ Faute directe {st.session_state.board['teams'][loser]['player_1']}", disabled=st.session_state.processing):
-            st.session_state.processing = True
+        if st.button(f"❌ Faute directe {st.session_state.board['teams'][loser]['player_1']}"):
             for player in players:
                 if player == f"{loser}1":
                     st.session_state.board["live_stats"][player].append(-1)
                 else:
                     st.session_state.board["live_stats"][player].append(0)
-            st.session_state.processing = False
             st.rerun()
     with col_d2:
-        if st.button(f"❌ Faute directe {st.session_state.board['teams'][loser]['player_2']}", disabled=st.session_state.processing):
-            st.session_state.processing = True
+        if st.button(f"❌ Faute directe {st.session_state.board['teams'][loser]['player_2']}"):
             for player in players:
                 if player == f"{loser}2":
                     st.session_state.board["live_stats"][player].append(-1)
                 else:
                     st.session_state.board["live_stats"][player].append(0)
-            st.session_state.processing = False
             st.rerun()
 
 # Annulation point précédent
 l,c,r = st.columns(3)
 with c:
-    if st.button("Annuler point précédent", type="primary", disabled=st.session_state.processing):
-        st.session_state.processing = True
+    if st.button("Annuler point précédent", type="primary"):
         undo_point_won(st.session_state.board)
-        st.session_state.processing = False
         st.rerun()
 
 # Attribution des points
 col1, col2 = st.columns(2)
 with col1:
     st.markdown(f"### {st.session_state.board['teams']['A']['name']}")
-    if st.button("✅ Point gagné", key="point_A", disabled=st.session_state.processing):
-        st.session_state.processing = True
+    if st.button("✅ Point gagné", key="point_A"):
         point_won(st.session_state.board, "A")
-        st.session_state.processing = False
         if st.session_state.board["follow_players_stats"]:
             point_details("A")
         else:
             st.rerun()
 with col2:
     st.markdown(f"### {st.session_state.board['teams']['B']['name']}")
-    if st.button("✅ Point gagné", key="point_B", disabled=st.session_state.processing):
-        st.session_state.processing = True
+    if st.button("✅ Point gagné", key="point_B"):
         point_won(st.session_state.board, "B")
-        st.session_state.processing = False
         if st.session_state.board["follow_players_stats"]:
             point_details("B")
         else:

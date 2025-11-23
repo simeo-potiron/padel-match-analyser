@@ -15,18 +15,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-if "processing" not in st.session_state:
-    st.session_state.processing = False
-
 title_col, new_col = st.columns([8,2])
 with title_col:
     st.title("Mes matchs")
 with new_col:
     st.space("small")
-    if st.button("➕ Nouveau match", disabled=st.session_state.processing):
-        st.session_state.processing = True
+    if st.button("➕ Nouveau match"):
         st.session_state.match_id = upsert_match("create", match_hash={"players": [st.session_state["token"]]})["id"]
-        st.session_state.processing = False
         if st.session_state.match_id:
             st.switch_page("pages/NewMatch.py")
     st.space("small")
@@ -70,15 +65,12 @@ for match in matches[:st.session_state.displayed_matches]:
                 st.markdown(f"### {match.get('fields').get('name') or 'Match vide'}")
         finally:
             with r:
-                if st.button(f"Ouvrir ce match", key=f"recap_{match.get('id')}", disabled=st.session_state.processing):
-                    st.session_state.processing = True
+                if st.button(f"Ouvrir ce match", key=f"recap_{match.get('id')}"):
                     st.session_state.match_id = match.get("id")
                     st.session_state.board = board
-                    st.session_state.processing = False
                     st.switch_page("pages/Match.py")
             with rr:
-                if st.button(f"🗑️", key=f"delete_{match.get('id')}", type="primary", disabled=st.session_state.processing):
-                    st.session_state.processing = True
+                if st.button(f"🗑️", key=f"delete_{match.get('id')}", type="primary"):
                     match_data = get_match_data(match.get("id"))
                     if len(match_data.get("players")) == 1:
                         match_video = match_data.get("video")
@@ -88,7 +80,6 @@ for match in matches[:st.session_state.displayed_matches]:
                     else:
                         new_players = [usr_token for usr_token in match_data.get("players") if usr_token != st.session_state.token]
                         upsert_match("update", match_id=match.get("id"), match_hash={"players": new_players})
-                    st.session_state.processing = False
                     st.rerun()
             if cmpt == st.session_state.displayed_matches:
                 if len(matches) > st.session_state.displayed_matches:

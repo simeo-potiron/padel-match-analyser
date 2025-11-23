@@ -20,9 +20,6 @@ st.markdown("""
 
 st.title("🆕 Suivre un nouveau match")
 
-if "processing" not in st.session_state:
-    st.session_state.processing = False
-
 try:
     # Vérifie que le match est bien stocké en base
     if st.session_state.match_id is None:
@@ -34,14 +31,14 @@ except:
 format_choices = ["--"] + [f"{str(key)}: {val.get('description')}" for key, val in formats.items()]
 
 # ✅ Choix du format du match
-input_format = st.selectbox("Format du match*", format_choices, disabled=st.session_state.processing)
+input_format = st.selectbox("Format du match*", format_choices)
 match_format = input_format.split(":")[0] if (":" in input_format) else None
 
 title_col, toggle_col = st.columns([3, 1])
 with title_col:
     st.markdown("### 🎾 Equipes et joueurs")
 with toggle_col:
-    follow_players_stats = st.toggle("Suivre les stats des joueurs", True, disabled=st.session_state.processing)
+    follow_players_stats = st.toggle("Suivre les stats des joueurs", True)
 
 # ✅ Deux colonnes (moitié / moitié)
 col1, col2 = st.columns(2)
@@ -49,22 +46,21 @@ col1, col2 = st.columns(2)
 # === Équipe A ===
 with col1:
     st.subheader("Équipe A")
-    team_a = st.text_input("Nom de l'équipe", key="team1_name", disabled=st.session_state.processing)
-    player_1a = st.text_input("Joueur 1*", key="team1_p1", disabled=st.session_state.processing)
-    player_2a = st.text_input("Joueur 2*", key="team1_p2", disabled=st.session_state.processing)
+    team_a = st.text_input("Nom de l'équipe", key="team1_name")
+    player_1a = st.text_input("Joueur 1*", key="team1_p1")
+    player_2a = st.text_input("Joueur 2*", key="team1_p2")
 
 # === Équipe B ===
 with col2:
     st.subheader("Équipe B")
-    team_b = st.text_input("Nom de l'équipe 2", key="team2_name", disabled=st.session_state.processing)
-    player_1b = st.text_input("Joueur 1*", key="team2_p1", disabled=st.session_state.processing)
-    player_2b = st.text_input("Joueur 2*", key="team2_p2", disabled=st.session_state.processing)
+    team_b = st.text_input("Nom de l'équipe 2", key="team2_name")
+    player_1b = st.text_input("Joueur 1*", key="team2_p1")
+    player_2b = st.text_input("Joueur 2*", key="team2_p2")
 
 # ✅ Validation du formulaire
-if st.button("✅ Démarrer le match", disabled=st.session_state.processing):
+if st.button("✅ Démarrer le match"):
     players = [player_1a, player_2a, player_1b, player_2b]
     if match_format and all(players) and (len(set(players))==len(players)):
-        st.session_state.processing = True
         # Prepare the template
         board = copy.deepcopy(score_board)
         board["format"] = match_format
@@ -88,7 +84,6 @@ if st.button("✅ Démarrer le match", disabled=st.session_state.processing):
 
         # ➜ futur : envoi au backend + passage au scoring
         st.success("Match créé ! 🚀")
-        st.session_state.processing = False
         st.switch_page("pages/Match.py")
     elif not match_format:
         st.error("Merci de choisir le format sous lequel est joué le match.")
