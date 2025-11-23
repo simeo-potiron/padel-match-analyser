@@ -12,6 +12,7 @@ score_board = {
     },
     "match": {
         "score": [],
+        "score_tb": [],
         "sets": {
             "A": 0,
             "B": 0

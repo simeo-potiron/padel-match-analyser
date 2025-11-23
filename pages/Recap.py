@@ -3,8 +3,11 @@ import pandas as pd
 import datetime as dt
 import json
 import uuid
+import time
 import plotly.graph_objects as go
-from utils import require_login, upsert_match, get_match_data, store_video_to_gcs, delete_video_from_gcs
+
+from utils import *
+from update_score import undo_point_won
 
 st.set_page_config(page_title="Recap match", page_icon="📊", layout="wide")
 require_login()
@@ -49,13 +52,74 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-title_col, new_col = st.columns([8,2])
+# Compare saved data with session_state data
+saved_board = get_match_data(st.session_state.match_id).get("board")
+pending_results = not (saved_board and compare_objects(json.loads(saved_board), st.session_state.board))
+
+title_col, share_col, home_col = st.columns([8,1,1])
 with title_col:
     st.title("Resultats")
-with new_col:
+@st.dialog("🚨 Modifications non sauvegardées", width="small", dismissible=False)
+def go_home():
+    st.write("Voulez-vous vraiment quitter la page ?")
+    st.write("Des données non sauvegardées seront perdues...")
+    st.space("small")
+    vide_1, yes_col, vide_2, no_col, vide_3 = st.columns(5)
+    with yes_col: 
+        if st.button("Oui"):
+            st.switch_page("Home.py")
+    with no_col:
+        if st.button("Non"):
+            st.rerun()
+with home_col:
     st.space("small")
     if st.button("🏠 Home"):
-        st.switch_page("Home.py")
+        go_home()
+    st.space("small")
+@st.dialog("Partager ce match", width="small", dismissible=True, on_dismiss="rerun")
+def share_match():
+    current_players_ids = get_match_data(st.session_state.match_id).get("players")
+    current_players = [get_user_infos(usr_id).get("email") for usr_id in current_players_ids if usr_id != st.session_state.token]
+    if current_players:
+        # Display current players
+        st.markdown("""
+        <style>
+        .scroll-container {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            gap: 1rem;
+        }
+        .item {
+            background: #eee;
+            color: black;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: inline-block;
+            flex: 0 0 auto;
+        }
+        </style>""", unsafe_allow_html=True)
+        scroller = "<div class='scroll-container'>"
+        for plyr in current_players:
+            scroller += f"<div class='item'>{plyr}</div>"
+        scroller += "</div>"
+        st.write("Présents sur ce match:")
+        st.markdown(scroller, unsafe_allow_html=True)
+        st.space("small")
+    # Add new players
+    users = get_other_users(current_players_ids)
+    if users:
+        to_invite = st.multiselect("Inviter sur ce match:", [usr.get("fields").get("email") for usr in users])
+        if st.button("Ajouter au match") and to_invite:
+            new_players_ids = [usr.get("id") for usr in users if usr.get("fields").get("email") in to_invite]
+            upsert_match("update", match_id=st.session_state.match_id, match_hash={"players": current_players_ids + new_players_ids})
+            st.success(f"{len(new_players_ids)} nouveaux joueurs ajoutés au match")
+            time.sleep(2)
+            st.rerun()
+with share_col:
+    st.space("small")
+    if st.button("📤 Share"):
+        share_match()
     st.space("small")
 
 try:
@@ -98,7 +162,7 @@ else:
     <div class="result-score"><strong>{final_sets}</strong></div>
     </div>
     """, unsafe_allow_html=True)
-st.write("")
+st.space("small")
 
 # Initiate recap_display
 if "recap_display" not in st.session_state:
@@ -111,7 +175,7 @@ if "recap_display" not in st.session_state:
 # Allow user to change view
 match_button, player_button, video_button, _, return_button, save_button = st.columns([2, 2, 2, 3, 3, 3])
 with match_button:
-    if st.button("Match stats"):            
+    if st.button("Match stats"):
         st.session_state.recap_display = {
             "match": (st.session_state.recap_display["match"]+1)%2, 
             "players": 0,
@@ -141,11 +205,17 @@ with return_button:
         if st.button("⏯️ Reprendre le match"):
             st.session_state.board["winner"] = None
             st.switch_page("pages/Match.py")
+    else:
+        # ❌ Bouton pour annuler le dernier point
+        if st.button("❌ Annuler le dernier point"):
+            undo_point_won(st.session_state.board)
+            st.switch_page("pages/Match.py")
+
 with save_button:
     @st.dialog("Détails de la partie:", width="small", dismissible=True, on_dismiss="rerun")
     def save_match():
-        default_name = get_match_data(st.session_state.match_id, "name") or "Match entre copains"
-        default_date = get_match_data(st.session_state.match_id, "date") or dt.datetime.today().strftime('%Y-%m-%d')
+        default_name = get_match_data(st.session_state.match_id).get("name", "Match entre copains")
+        default_date = get_match_data(st.session_state.match_id).get("date", dt.datetime.today().strftime('%Y-%m-%d'))
         name_col, date_col = st.columns(2)
         with name_col:
             name = st.text_input("Nommer la partie:", value=default_name, label_visibility="collapsed")
@@ -155,14 +225,17 @@ with save_button:
             if name and date:
                 match_hash = {"name": name, "date": date.strftime('%Y-%m-%d'), "board": json.dumps(st.session_state.board)}
                 upsert_match("update", match_id=st.session_state.match_id, match_hash=match_hash)
+                st.success("Match enregistré avec succès")
+                time.sleep(2)
                 st.switch_page("Home.py")
             else:
                 st.error("Merci de renseigner un nom et une date pour enregistrer cette partie")
 
-    if st.button("💾 Enregistrer la partie"):
-        save_match()
+    # Display Save button only if needed
+    if pending_results:
+        if st.button("💾 Enregistrer la partie"):
+            save_match()
                 
-
 # Switch display between Match stats, Players stats and Match video
 if st.session_state.recap_display["match"] == 1:
     # Titre
@@ -519,7 +592,7 @@ elif st.session_state.recap_display["video"] == 1:
         "<h2 style='text-align: center; color: white;'>Vidéo du match</h2><br>",
         unsafe_allow_html=True
     )
-    video_url = get_match_data(st.session_state.match_id, "video")
+    video_url = get_match_data(st.session_state.match_id).get("video")
     l, c, r = st.columns([1,3,1])
     with c:
         if video_url:
@@ -534,6 +607,3 @@ elif st.session_state.recap_display["video"] == 1:
             upsert_match("update", match_id=st.session_state.match_id, match_hash={"video": public_video_url})
             st.session_state.file_uploader_key = f"file_uploader_{uuid.uuid4()}"
             st.rerun()
-
-
-        

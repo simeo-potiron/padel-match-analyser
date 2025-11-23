@@ -135,15 +135,23 @@ def get_user_infos(token):
 
     return user.get("fields")
 
+def get_other_users(tokens):
+    # Connexion à Airtable
+    table = at.Table(AT_TOKEN, AT_TABLES["Users"]["base"], AT_TABLES["Users"]["table"])
+    all_users = table.all()
+    return [usr for usr in all_users if usr.get("id") not in tokens]
+
 # -----------------------------------------------------
 # FUNCTIONS Matches
 # -----------------------------------------------------
 def get_matches(token):
+    # Get matchs linked to this user
+    match_ids = get_user_infos(token).get("matchs")
+
     # Connexion à Airtable
     table = at.Table(AT_TOKEN, AT_TABLES["Matchs"]["base"], AT_TABLES["Matchs"]["table"])
+    formula = f"FIND(RECORD_ID(), '{', '.join(match_ids)}') > 0"
 
-    # Connexion au record
-    formula = f"{{user}} = '{token}'"
     return table.all(formula=formula)
 
 def upsert_match(type, match_id="", match_hash={}):
@@ -159,11 +167,11 @@ def upsert_match(type, match_id="", match_hash={}):
     else:
         return None
 
-def get_match_data(match_id, field):
+def get_match_data(match_id):
     # Connexion à Airtable
     table = at.Table(AT_TOKEN, AT_TABLES["Matchs"]["base"], AT_TABLES["Matchs"]["table"])
     match = table.get(match_id)
-    return match.get("fields").get(field)
+    return match.get("fields")
 
 # -----------------------------------------------------
 # FUNCTIONS Videos
@@ -183,3 +191,40 @@ def delete_video_from_gcs(video_url):
     bucket = client.bucket(BUCKET_NAME)
     blob = bucket.blob(destination_blob_name)
     blob.delete()
+
+# -----------------------------------------------------
+# FUNCTIONS Utils
+# -----------------------------------------------------
+def compare_objects(obj_1, obj_2):
+    # Check they are the same type of objects
+    if type(obj_1) != type(obj_2):
+        return False
+    
+    # Compare objects depending on their types
+    match type(obj_1):
+        case dict():
+            # Compare dicts
+            for key in obj_1.keys:
+                if not compare_objects(obj_1.get(key), obj_2.get(key)):
+                    return False
+            return True
+        case list():
+            # Compare lists of objects
+            if len(obj_1) == len(obj_2):
+                for el_1 in obj_1:
+                    found = False
+                    for el_2 in obj_2:
+                        if compare_objects(el_1, el_2):
+                            found = True
+                            break
+                    if not found:
+                        return False
+                return True
+            else:
+                return False
+        case _:
+            try:
+                return obj_1 == obj_2
+            except:
+                return False
+                
