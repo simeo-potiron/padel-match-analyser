@@ -1,15 +1,28 @@
-from templates import formats
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Import PACKAGES    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Generic Packages
 import copy
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#                   Increment points
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Import GLOBAL VARIABLES    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+from storage import *
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Define FUNCTIONS    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
 def check_set_won(board):
     """
     Only for sets ending without TB or super-TB.
     Check if one of the teams have reached the minimum number of games to win a set and have a break.
     """
-    nb_games_per_set = formats.get(board["format"])["games"]
+    nb_games_per_set = TEMPLATE_FORMATS.get(board["format"])["games"]
     games_a, games_b = board["match"]["games"]["A"], board["match"]["games"]["B"]
     return (max(games_a, games_b) >= nb_games_per_set) and (abs(games_a - games_b) >= 2)
 
@@ -17,7 +30,7 @@ def check_match_won(board):
     """
     Check if one of the teams have reached the minimum number of sets to win the match.
     """
-    nb_sets_to_win = formats.get(board["format"])["sets"]
+    nb_sets_to_win = TEMPLATE_FORMATS.get(board["format"])["sets"]
     sets_a, sets_b = board["match"]["sets"]["A"], board["match"]["sets"]["B"]
     return max(sets_a, sets_b) >= nb_sets_to_win
 
@@ -59,7 +72,7 @@ def point_won(board, team, update_stats=True):
         board["follow_players_stats"] = False
 
     # Check match specs to see if we are playing a TB or super-TB
-    match_specs = formats.get(board["format"])
+    match_specs = TEMPLATE_FORMATS.get(board["format"])
     nb_games_per_set, nb_sets_to_win, tb_loc = match_specs["games"], match_specs["sets"], match_specs["tie_break"]
     super_tb = match_specs["super_tb"] and (board["match"]["sets"]["A"] == board["match"]["sets"]["B"] == (nb_sets_to_win - 1))
     tie_break = (board["match"]["games"]["A"] == board["match"]["games"]["B"] == (nb_games_per_set + tb_loc)) and not super_tb
@@ -192,9 +205,6 @@ def match_won(board, team, update_stats=True):
         # Store "Fin de Match" event
         board["live_stats"]["events"].append(f"Fin de match")
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#                       Annulation point
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 def undo_point_won(board):
     # Check who won last point (if any)
     try:
@@ -203,7 +213,7 @@ def undo_point_won(board):
         return False
 
     # Match specs
-    match_specs = formats.get(board["format"])
+    match_specs = TEMPLATE_FORMATS.get(board["format"])
     nb_games_per_set, nb_sets_to_win, tb_loc = match_specs["games"], match_specs["sets"], match_specs["tie_break"]
 
     # Check if a game has been won:

@@ -1,18 +1,54 @@
-import streamlit as st
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Import PACKAGES    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Generic Packages
 import pandas as pd
-import datetime as dt
 import json
 import uuid
 import time
+
+# Streamlit Package
+import streamlit as st
+
+# Datetime Packages
+from datetime import datetime
+
+# Plotly Packages
 import plotly.graph_objects as go
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Import UTILS FUNCTIONS    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
 from utils import *
-from update_score import undo_point_won
 
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Import GLOBAL VARIABLES    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+from storage import *
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Define PAGE    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# ~~~~    Page config    ~~~~ #
 st.set_page_config(page_title="Recap match", page_icon="📊", layout="wide")
-require_login()
 
-# ✅ Style mobile
+
+# ~~~~    Initial checks    ~~~~ #
+require_login()
+if "match_id" not in st.session_state or st.session_state.match_id is None:
+    st.switch_page("Home.py")
+elif any([el not in st.session_state or st.session_state[el] is None for el in SESSION_STATE_MATCH_FIELDS]):
+    st.switch_page("Home.py")
+
+
+# ~~~~    Global HTML settings    ~~~~ #
 st.markdown("""
 <style>
     table {
@@ -52,13 +88,9 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Compare saved data with session_state data
-saved_board = get_match_data(st.session_state.match_id).get("board")
-pending_results = not (saved_board and compare_objects(json.loads(saved_board), st.session_state.board))
 
-title_col, share_col, home_col = st.columns([8,1,1])
-with title_col:
-    st.title("Resultats")
+# ~~~~    Pop-Up functions    ~~~~ #
+# Pop-Up: Pending changes 
 @st.dialog("🚨 Modifications non sauvegardées", width="small", dismissible=False)
 def go_home():
     st.write("Voulez-vous vraiment quitter la page ?")
@@ -71,16 +103,13 @@ def go_home():
     with no_col:
         if st.button("Non"):
             st.rerun()
-with home_col:
-    st.space("small")
-    if st.button("🏠 Home"):
-        go_home()
-    st.space("small")
+
+# Pop-Up: Share match
 @st.dialog("Partager ce match", width="small", dismissible=True, on_dismiss="rerun")
 def share_match():
-    current_players_ids = get_match_data(st.session_state.match_id).get("players")
-    current_players = [get_user_infos(usr_id).get("email") for usr_id in current_players_ids if usr_id != st.session_state.token]
-    if current_players:
+    current_viewers_ids = [user.get("token") for user in st.session_state.match_viewers]
+    current_viewers = [user.get("email") for user in st.session_state.match_viewers if user.get("token") != st.session_state.token]
+    if current_viewers:
         # Display current players
         st.markdown("""
         <style>
@@ -100,44 +129,73 @@ def share_match():
         }
         </style>""", unsafe_allow_html=True)
         scroller = "<div class='scroll-container'>"
-        for plyr in current_players:
+        for user in current_viewers:
             scroller += f"<div class='item'>{plyr}</div>"
         scroller += "</div>"
         st.write("Présents sur ce match:")
         st.markdown(scroller, unsafe_allow_html=True)
         st.space("small")
     # Add new players
-    users = get_other_users(current_players_ids)
-    if users:
-        to_invite = st.multiselect("Inviter sur ce match:", [usr.get("fields").get("email") for usr in users])
+    available_users = get_other_users(current_viewers_ids)
+    if available_users:
+        to_invite = st.multiselect("Inviter sur ce match:", [user.get("email") for user in available_users])
         if st.button("Ajouter au match") and to_invite:
-            new_players_ids = [usr.get("id") for usr in users if usr.get("fields").get("email") in to_invite]
-            upsert_match("update", match_id=st.session_state.match_id, match_hash={"players": current_players_ids + new_players_ids})
-            st.success(f"{len(new_players_ids)} nouveaux joueurs ajoutés au match")
+            new_viewers_ids = [user.get("token") for user in available_users if user.get("email") in to_invite]
+            upsert_match("update", match_id=st.session_state.match_id, match_hash={"viewers": current_viewers_ids + new_viewers_ids})
+            st.success(f"{len(new_viewers_ids)} nouveaux joueurs ajoutés au match")
             time.sleep(2)
             st.rerun()
+
+# Pop-Up: Save changes
+@st.dialog("Détails de la partie:", width="small", dismissible=True, on_dismiss="rerun")
+def save_match():
+    default_name = get_match_data(st.session_state.match_id).get("name", "Match entre copains")
+    default_date = get_match_data(st.session_state.match_id).get("date", datetime.today().strftime('%Y-%m-%d'))
+    name_col, date_col = st.columns(2)
+    with name_col:
+        name = st.text_input("Nommer la partie:", value=default_name, label_visibility="collapsed")
+    with date_col:
+        date = st.date_input("Date de la partie:", value=default_date, max_value="today", label_visibility="collapsed")
+    if st.button("💾"):
+        if name and date:
+            match_hash = {"name": name, "date": date.strftime('%Y-%m-%d'), "board": json.dumps(st.session_state.match_board)}
+            upsert_match("update", match_id=st.session_state.match_id, match_hash=match_hash)
+            st.session_state.match_updated = False
+            st.success("Match enregistré avec succès")
+            time.sleep(2)
+            st.switch_page("Home.py")
+        else:
+            st.error("Merci de renseigner un nom et une date pour enregistrer cette partie")
+
+
+# ~~~~    Page core    ~~~~ #
+# Header
+title_col, share_col, home_col = st.columns([8,1,1])
+with title_col:
+    st.title("Resultats")
 with share_col:
     st.space("small")
     if st.button("📤 Share"):
         share_match()
     st.space("small")
+with home_col:
+    st.space("small")
+    if st.button("🏠 Home"):
+        if st.session_state.match_updated:
+            go_home()
+        else:
+            st.switch_page("Home.py")
+    st.space("small")
 
-try:
-    # Vérifie que board ait bien été initialisé et que le match est bien stocké en base
-    if st.session_state.board is None or st.session_state.match_id is None:
-        raise Exception
-except:
-    st.switch_page("Home.py")
-
-winner = st.session_state.board["winner"]
+# Store the winner of the match
+winner = st.session_state.match_board["winner"]
 match_over = winner in ["A", "B"]
 
 # Match result band:
 if match_over:
     # Display match result
-    team_name = st.session_state.board["teams"][winner]["name"]
-    final_sets = " ".join([f"{set_score['A']}/{set_score['B']}" for set_score in st.session_state.board["match"]["score"]])
-
+    team_name = st.session_state.match_board["teams"][winner]["name"]
+    final_sets = " ".join([f"{set_score['A']}/{set_score['B']}" for set_score in st.session_state.match_board["match"]["score"]])
     st.markdown(f"""
     <div class="result-container">
     <div class="result-title">🏆 Jeu, Set et Match !</div>
@@ -147,14 +205,13 @@ if match_over:
     """, unsafe_allow_html=True)
 else:
     # Display current match state
-    team_name_a = st.session_state.board["teams"]["A"]["name"]
-    team_name_b = st.session_state.board["teams"]["B"]["name"]
+    team_name_a = st.session_state.match_board["teams"]["A"]["name"]
+    team_name_b = st.session_state.match_board["teams"]["B"]["name"]
     final_sets = " ".join(
-        [f"{set_score['A']}/{set_score['B']}" for set_score in st.session_state.board["match"]["score"]] +
-        [f"{st.session_state.board['match']['games']['A']}/{st.session_state.board['match']['games']['B']}"] +
-        [f"{st.session_state.board['match']['points']['A']}-{st.session_state.board['match']['points']['B']}"]
+        [f"{set_score['A']}/{set_score['B']}" for set_score in st.session_state.match_board["match"]["score"]] +
+        [f"{st.session_state.match_board['match']['games']['A']}/{st.session_state.match_board['match']['games']['B']}"] +
+        [f"{st.session_state.match_board['match']['points']['A']}-{st.session_state.match_board['match']['points']['B']}"]
     )
-
     st.markdown(f"""
     <div class="result-container">
     <div class="result-title"> 🚧 Match interrompu !</div>
@@ -183,7 +240,7 @@ with match_button:
         }
         st.rerun()
 with player_button:
-    if st.session_state.board["follow_players_stats"]:
+    if st.session_state.match_board["follow_players_stats"]:
         if st.button("Players stats"):
             st.session_state.recap_display = {
                 "match": 0, 
@@ -200,51 +257,33 @@ with video_button:
         }
         st.rerun()
 with return_button:
-    if not match_over:
-        # ⏯️ Bouton pour reprendre le match
-        if st.button("⏯️ Reprendre le match"):
-            st.session_state.board["winner"] = None
-            st.switch_page("pages/Match.py")
-    else:
-        # ❌ Bouton pour annuler le dernier point
-        if st.button("❌ Annuler le dernier point"):
-            undo_point_won(st.session_state.board)
-            st.switch_page("pages/Match.py")
-
+    if st.session_state.match_admin:
+        if not match_over:
+            # ⏯️ Restart pending match
+            if st.button("⏯️ Reprendre le match"):
+                st.session_state.match_board["winner"] = None
+                st.switch_page("pages/Match.py")
+        else:
+            # ❌ Reset last point and restart match
+            if st.button("❌ Annuler le dernier point"):
+                if undo_point_won(st.session_state.match_board):
+                    st.session_state.match_updated = True
+                    st.switch_page("pages/Match.py")
 with save_button:
-    @st.dialog("Détails de la partie:", width="small", dismissible=True, on_dismiss="rerun")
-    def save_match():
-        default_name = get_match_data(st.session_state.match_id).get("name", "Match entre copains")
-        default_date = get_match_data(st.session_state.match_id).get("date", dt.datetime.today().strftime('%Y-%m-%d'))
-        name_col, date_col = st.columns(2)
-        with name_col:
-            name = st.text_input("Nommer la partie:", value=default_name, label_visibility="collapsed")
-        with date_col:
-            date = st.date_input("Date de la partie:", value=default_date, max_value="today", label_visibility="collapsed")
-        if st.button("💾"):
-            if name and date:
-                match_hash = {"name": name, "date": date.strftime('%Y-%m-%d'), "board": json.dumps(st.session_state.board)}
-                upsert_match("update", match_id=st.session_state.match_id, match_hash=match_hash)
-                st.success("Match enregistré avec succès")
-                time.sleep(2)
-                st.switch_page("Home.py")
-            else:
-                st.error("Merci de renseigner un nom et une date pour enregistrer cette partie")
-
     # Display Save button only if needed
-    if pending_results:
+    if st.session_state.match_updated and st.session_state.match_admin:
         if st.button("💾 Enregistrer la partie"):
             save_match()
                 
 # Switch display between Match stats, Players stats and Match video
 if st.session_state.recap_display["match"] == 1:
-    # Titre
+    # Title
     st.markdown(
         "<h2 style='text-align: center; color: white;'>Statistiques du match</h2>",
         unsafe_allow_html=True
     )
 
-    # Paires
+    # Teams
     st.markdown("""
     <style>
     .team-container {
@@ -279,26 +318,24 @@ if st.session_state.recap_display["match"] == 1:
     }
     </style>
     """, unsafe_allow_html=True)
-
     st.markdown(f"""
     <div class="team-container">
         <div class="team-block">
-            <div>{st.session_state.board["teams"]["A"]["player_1"]}</div>
-            <div>{st.session_state.board["teams"]["A"]["player_2"]}</div>
+            <div>{st.session_state.match_board["teams"]["A"]["player_1"]}</div>
+            <div>{st.session_state.match_board["teams"]["A"]["player_2"]}</div>
         </div>
         <div class="vs-block">VS</div>
         <div class="team-block" style="text-align: right;">
-            <div>{st.session_state.board["teams"]["B"]["player_1"]}</div>
-            <div>{st.session_state.board["teams"]["B"]["player_2"]}</div>
+            <div>{st.session_state.match_board["teams"]["B"]["player_1"]}</div>
+            <div>{st.session_state.match_board["teams"]["B"]["player_2"]}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-
-    # Selectbox Mat/Set n
+    # Selectbox Mat/Set_n
     _, select_box_col = st.columns([8,2])
     with select_box_col:
-        nb_sets_played = len(st.session_state.board["match"]["score"]) + (0 if match_over else 1)
+        nb_sets_played = len(st.session_state.match_board["match"]["score"]) + (0 if match_over else 1)
         options = ["Match"] + [f"Set{k+1}" for k in range(nb_sets_played)]
         period = st.selectbox(
             label="Period considered",
@@ -306,7 +343,7 @@ if st.session_state.recap_display["match"] == 1:
             label_visibility="hidden",
         )
 
-    # Affichage des statistiques globales:
+    # Display global stats:
     data = {
         "A": [], 
         "Stat": [
@@ -321,8 +358,8 @@ if st.session_state.recap_display["match"] == 1:
         ], 
         "B": []
     }
-    live_stats = st.session_state.board["live_stats"]
-    ## Preparer la donnée selon la période considérée
+    live_stats = st.session_state.match_board["live_stats"]
+    ## Filter data only on the selected period
     if period == "Match":
         stats = pd.DataFrame(live_stats)
     else:
@@ -330,20 +367,20 @@ if st.session_state.recap_display["match"] == 1:
         first_idx = live_stats["events"].index(f"Fin set {set_number - 1}") + 1 if set_number > 1 else 0
         last_idx = live_stats["events"].index(f"Fin set {set_number}") + 1 if set_number < nb_sets_played else None
         stats = pd.DataFrame(live_stats)[first_idx:last_idx]
-    ## Balles de macth
+    ## Match points
     data["A"].append(f"{stats[stats.match_points == 'A'].shape[0]}")
     data["B"].append(f"{stats[stats.match_points == 'B'].shape[0]}")
-    ## Balles de break
+    ## Break points
     data["A"].append(f"{stats[stats.break_points == 'A'].shape[0]}")
     data["B"].append(f"{stats[stats.break_points == 'B'].shape[0]}")
     ## Breaks
     data["A"].append(f"{stats[stats.breaks == 'A'].shape[0]}")
     data["B"].append(f"{stats[stats.breaks == 'B'].shape[0]}")
-    ## Points gagnés
+    ## Points won
     total_points, points_A, points_B = stats.shape[0], stats[stats.points_won == 'A'].shape[0], stats[stats.points_won == 'B'].shape[0]
     data["A"].append(f"{round(points_A/total_points*100) if total_points > 0 else 0}% ({points_A}/{total_points})")
     data["B"].append(f"{round(points_B/total_points*100) if total_points > 0 else 0}% ({points_B}/{total_points})")
-    ## Points gagnés au service et au retour
+    ## Service/Return points won
     total_points_A, points_AA, points_AB = stats[stats.serving.isin(['A1', 'A2'])].shape[0], stats[stats.serving.isin(['A1', 'A2']) & (stats.points_won == 'A')].shape[0], stats[stats.serving.isin(['A1', 'A2']) & (stats.points_won == 'B')].shape[0]
     total_points_B, points_BB, points_BA = stats[stats.serving.isin(['B1', 'B2'])].shape[0], stats[stats.serving.isin(['B1', 'B2']) & (stats.points_won == 'B')].shape[0], stats[stats.serving .isin(['B1', 'B2']) & (stats.points_won == 'A')].shape[0]
     ### Serve
@@ -352,14 +389,14 @@ if st.session_state.recap_display["match"] == 1:
     ### Return
     data["A"].append(f"{round(points_BA/total_points_B*100) if total_points_B > 0 else 0}% ({points_BA}/{total_points_B})")
     data["B"].append(f"{round(points_AB/total_points_A*100) if total_points_A > 0 else 0}% ({points_AB}/{total_points_A})")
-    ### Points gagnants
+    ### Winners
     data["A"].append(f"{stats[(stats.A1 == 1) | (stats.A2 == 1)].shape[0]}")
     data["B"].append(f"{stats[(stats.B1 == 1) | (stats.B2 == 1)].shape[0]}")
-    ### Fautes directes
+    ### Unforced errors
     data["A"].append(f"{stats[(stats.A1 == -1) | (stats.A2 == -1)].shape[0]}")
     data["B"].append(f"{stats[(stats.B1 == -1) | (stats.B2 == -1)].shape[0]}")
 
-    # Fonction pour styliser les lignes en indiquant le plus grand
+    # Highligh external borders depending on the values
     def border_style(row_index, data):
         styles = [''] * df.shape[1]  # init vide pour chaque cellule
         if int(data["B"][row_index].split("%")[0]) > int(data["A"][row_index].split("%")[0]):
@@ -372,14 +409,13 @@ if st.session_state.recap_display["match"] == 1:
             styles = ['border-left: none; border-right: none'] * len(styles)
         return styles
     
-    # ✅ Stylisation directe via Styler
+    # Shape table using Styler
     df = pd.DataFrame(data)
     styled_df = (
         df.style
             .hide(axis="index")
             .hide(axis="columns")
             .set_table_styles([
-                # Table globale
                 {
                     "selector": "table",
                     "props": [
@@ -393,7 +429,6 @@ if st.session_state.recap_display["match"] == 1:
                         ("text-align", "center"),
                     ],
                 },
-                # Cellules
                 {
                     "selector": "td",
                     "props": [
@@ -404,7 +439,6 @@ if st.session_state.recap_display["match"] == 1:
                         ("vertical-align", "middle"),
                     ],
                 },
-                # Dernière ligne sans bordure
                 {
                     "selector": "tr:last-child td",
                     "props": [("border-bottom", "none")],
@@ -413,13 +447,13 @@ if st.session_state.recap_display["match"] == 1:
             ])
     )
 
-    # Appliquer le style à chaque ligne
+    # Apply line style
     styled_df = styled_df.apply(lambda row: border_style(row.name, data), axis=1)
-    # # Affichage direct du HTML généré
+    # Display generated HMTL table
     st.write(styled_df.to_html(), unsafe_allow_html=True)
 
 elif st.session_state.recap_display["players"] == 1:
-    # Titre
+    # Title
     st.markdown(
         "<h2 style='text-align: center; color: white;'>Statistiques des joueurs</h2>",
         unsafe_allow_html=True
@@ -428,7 +462,7 @@ elif st.session_state.recap_display["players"] == 1:
     # Selectbox Mat/Set n
     _, select_box_col = st.columns([8,2])
     with select_box_col:
-        nb_sets_played = len(st.session_state.board["match"]["score"]) + (0 if match_over else 1)
+        nb_sets_played = len(st.session_state.match_board["match"]["score"]) + (0 if match_over else 1)
         options = ["Match"] + [f"Set{k+1}" for k in range(nb_sets_played)]
         period = st.selectbox(
             label="Period considered",
@@ -436,8 +470,8 @@ elif st.session_state.recap_display["players"] == 1:
             label_visibility="hidden",
         )
 
-    live_stats = st.session_state.board["live_stats"]
-    ## Preparer la donnée selon la période considérée
+    live_stats = st.session_state.match_board["live_stats"]
+    ## Filter data on the selected period
     if period == "Match":
         stats = pd.DataFrame(live_stats)
     else:
@@ -446,47 +480,41 @@ elif st.session_state.recap_display["players"] == 1:
         last_idx = live_stats["events"].index(f"Fin set {set_number}") + 1 if set_number < nb_sets_played else None
         stats = pd.DataFrame(live_stats)[first_idx:last_idx]
     
-    # Séparation de l'écran entre graph à gauche et table à droite
+    # Split the screen: display the graph (left) and the table (right)
     graph_col, tab_col = st.columns([2,1])
- 
-    fig = go.Figure() # Création de la figure
-    # --- Trace pour les valeurs des joueurs ---
-    # Affichage des statistiques des joueurs au cours du match:
+    fig = go.Figure()
+    # Display players stats in a timeline
     players_stats = {
-        str(st.session_state.board["teams"]["A"]["player_1"]): stats.A1, #st.session_state.board["live_stats"]["A1"],
-        str(st.session_state.board["teams"]["A"]["player_2"]): stats.A2, #st.session_state.board["live_stats"]["A2"],
-        str(st.session_state.board["teams"]["B"]["player_1"]): stats.B1, #st.session_state.board["live_stats"]["B1"],
-        str(st.session_state.board["teams"]["B"]["player_2"]): stats.B2, #st.session_state.board["live_stats"]["B2"],
+        str(st.session_state.match_board["teams"]["A"]["player_1"]): stats.A1, #st.session_state.match_board["live_stats"]["A1"],
+        str(st.session_state.match_board["teams"]["A"]["player_2"]): stats.A2, #st.session_state.match_board["live_stats"]["A2"],
+        str(st.session_state.match_board["teams"]["B"]["player_1"]): stats.B1, #st.session_state.match_board["live_stats"]["B1"],
+        str(st.session_state.match_board["teams"]["B"]["player_2"]): stats.B2, #st.session_state.match_board["live_stats"]["B2"],
     }
     df_raw = pd.DataFrame(players_stats)
-    df_cum = df_raw.cumsum() # Somme cumulée
-    # 🎨 Couleurs flashy (néon / saturées)
+    df_cum = df_raw.cumsum()
+    # Choose flashy colors to display the lines
     colors = [
         "#FFFF00",  # jaune flashy
         "#FFA500",  # orange flashy
         "#00FFFF",  # cyan clair
         "#fa25cb"   # rose vif
     ]
-    # Ajouter la ligne au graph
+    # Add each line to the graph
     for i, col in enumerate(df_cum.columns):
         color = colors[i]
-        # Trace avec légende colorée et ligne en escalier
         fig.add_trace(go.Scatter(
             x=df_cum.index - df_cum.index[0],
             y=df_cum[col],
             mode='lines',
-            name=f'<span style="color:{color}"><b>{col}</b></span>',  # texte coloré
-            line=dict(shape='hvh', color=color),
-            # legendgroup=col
+            name=f'<span style="color:{color}"><b>{col}</b></span>',
+            line=dict(shape='hvh', color=color)
         ))
     
-    # --- Trace pour les evenements ---
-    # On isole les positions où il y a un texte
+    # --- Display match events on the graph ---
     events_labels = [x if x != 0 else "" for x in stats.events]
     label_positions = [i for i, txt in enumerate(events_labels) if txt != ""]
     label_texts = [txt for txt in events_labels if txt != ""]
     y_for_labels = [0]*len(label_positions)
-    # On ajoute les labels au graph
     fig.add_trace(go.Scatter(
         x=label_positions,
         y=y_for_labels,
@@ -497,29 +525,29 @@ elif st.session_state.recap_display["players"] == 1:
         showlegend=False
     ))
 
-    # Mise en forme du graphique
+    # Shape and style of the graph
     fig.update_layout(
         title="Evolution des joueurs - ratio Points gagnants / Fautes directes",
-        xaxis=dict(visible=False), # Cache l'axe des abscisses
+        xaxis=dict(visible=False),
         legend=dict(
-            orientation="h",        # Légende horizontale
-            yanchor="top",          # Alignement vertical
-            y=-0.25,                # Placement sous le graphique
-            xanchor="center",       # Centrage horizontal
-            x=0.5,                  # Position centrale
-            title="",               # Pas de titre de légende
+            orientation="h",
+            yanchor="top",
+            y=-0.25,
+            xanchor="center",
+            x=0.5,
+            title="",
             font=dict(size=12),
         ),
-        margin=dict(b=100)  # Laisse un peu d’espace pour la légende en bas
+        margin=dict(b=100)
     )
-    # Affichage dans Streamlit
+    # Display chart in Streamlit
     with graph_col:
         st.plotly_chart(fig, width="stretch")
 
-    # Affichage des stats Points gagnants / Fautes directes totales par joueur
+    # Display players stats in a table (Winners  and Unforced errors)
     data = {
         "Points gagnants": [sum([1 if x == 1 else 0 for x in stats[player]]) for player in ["A1", "A2", "B1", "B2"]], 
-        "Joueur": [st.session_state.board["teams"][player[0]][f"player_{player[1]}"] for player in ["A1", "A2", "B1", "B2"]], 
+        "Joueur": [st.session_state.match_board["teams"][player[0]][f"player_{player[1]}"] for player in ["A1", "A2", "B1", "B2"]], 
         "Fautes directes": [sum([1 if x == -1 else 0 for x in stats[player]]) for player in ["A1", "A2", "B1", "B2"]]
     }
     df = pd.DataFrame(data)
@@ -527,7 +555,6 @@ elif st.session_state.recap_display["players"] == 1:
         df.style
             .hide(axis="index")
             .set_table_styles([
-                # Table globale
                 {
                     "selector": "table",
                     "props": [
@@ -541,7 +568,6 @@ elif st.session_state.recap_display["players"] == 1:
                         ("text-align", "center"),
                     ],
                 },
-                # Header
                 {
                     "selector": "th",
                     "props": [
@@ -557,7 +583,6 @@ elif st.session_state.recap_display["players"] == 1:
                         ("text-align", "center"),
                     ],
                 },
-                # Cellules
                 {
                     "selector": "td",
                     "props": [
@@ -571,7 +596,6 @@ elif st.session_state.recap_display["players"] == 1:
                         ("vertical-align", "middle"),
                     ],
                 },
-                # Dernière ligne sans bordure
                 {
                     "selector": "tr:last-child td",
                     "props": [("border-bottom", "none")],
@@ -579,31 +603,30 @@ elif st.session_state.recap_display["players"] == 1:
                 
             ])
     )
-    # Affichage direct du HTML généré
     with tab_col:
         st.space(size="large")
         st.space(size="small")
         st.write(styled_df.to_html(), unsafe_allow_html=True)
 
-
 elif st.session_state.recap_display["video"] == 1:
-    # Titre
+    # Title
     st.markdown(
         "<h2 style='text-align: center; color: white;'>Vidéo du match</h2><br>",
         unsafe_allow_html=True
     )
-    video_url = get_match_data(st.session_state.match_id).get("video")
+    # Display video
     l, c, r = st.columns([1,3,1])
     with c:
-        if video_url:
-            st.video(video_url)
+        if st.session_state.match_video:
+            st.video(st.session_state.match_video)
         if "file_uploader_key" not in st.session_state:
             st.session_state.file_uploader_key = "file_uploader_0"
         new_video = st.file_uploader("Lier une nouvelle vidéo à ce match:", type=["mp4", "mov"], key=st.session_state.file_uploader_key)
         if new_video:
             public_video_url = store_video_to_gcs(new_video)
-            if video_url:
-                delete_video_from_gcs(video_url)
+            if st.session_state.match_video:
+                delete_video_from_gcs(st.session_state.match_video)
+            st.session_state.match_video = public_video_url
             upsert_match("update", match_id=st.session_state.match_id, match_hash={"video": public_video_url})
             st.session_state.file_uploader_key = f"file_uploader_{uuid.uuid4()}"
             st.rerun()

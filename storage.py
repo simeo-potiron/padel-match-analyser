@@ -1,5 +1,68 @@
-# An empty score board
-score_board = {
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Import PACKAGES    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# Generic Packages
+
+
+# Streamlit Package
+import streamlit as st
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Define GLOBAL VARIABLES    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# ~~~~~~~~    Streamlit    ~~~~~~~~ #
+# Global App Settings
+BASE_URL = st.secrets["app"]["base_url"]
+# Airtable
+AT_TOKEN = st.secrets["airtable"]["token"]
+# Google Cloud
+GCP_SERVICE_ACCOUNT = st.secrets["google-service-account"]
+# SMTP
+SMTP_SERVER = st.secrets["email"]["smtp_server"]
+SMTP_PORT = st.secrets["email"]["smtp_port"]
+SMTP_SENDER_EMAIL = st.secrets["email"]["sender_email"]
+SMTP_APP_PASSWORD = st.secrets["email"]["app_password"]
+# Security
+PASSWORD_PEPPER = st.secrets["password"]["pepper"]
+# Display
+DEFAULT_DISPLAYED_MATCHES = 3
+SESSION_STATE_MATCH_FIELDS = ["match_admin", "match_viewers", "match_board", "match_updated"]
+
+# ~~~~~~~~    Google Cloud    ~~~~~~~~ #
+GCS_BUCKET = "padel-matchs"
+
+# ~~~~~~~~    Airtable    ~~~~~~~~ #
+# Store Airtable Ids
+PADEL_BASE_ID = "appHpJoih6uBVyjyC"
+# Users table
+USERS_TABLE_ID = "tblHyMeKRpnvgx6mb"
+USER_SESSION_STATE_FIELDS = [
+    "email",
+    "edit_matches",
+    "view_matches"
+]
+# Matches table
+MATCHES_TABLE_ID = "tblxB67Tdd0S2Yl5s"
+MATCH_SESSION_STATE_FIELDS = [
+    "match_id",
+    "name", 
+    "date", 
+    "display_score",
+    "video",
+    "editor",
+    "viewers_footprint"
+]
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# ~~~~~~~~    Define TEMPLATES    ~~~~~~~~ #
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+# ~~~~~~~~    Score Board    ~~~~~~~~ #
+TEMPLATE_SCORE_BOARD = {
     "format": "",
     "teams": {
         "A": {},
@@ -41,8 +104,8 @@ score_board = {
     "winner": None
 }
 
-# All available formats
-formats = {
+# ~~~~~~~~    Formats    ~~~~~~~~ #
+TEMPLATE_FORMATS = {
     "A1": {
         "description": "2 sets de 6 jeux, avec avantages.",
         "sets": 2,

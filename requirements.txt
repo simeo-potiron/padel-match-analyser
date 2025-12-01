@@ -1,5 +1,11 @@
+# Streamlit
 streamlit
-pandas
+# Airtable
 pyairtable
+# GCP
 google-cloud-storage
+# Data handling
+pandas
 plotly
+# Encoding
+bcrypt
