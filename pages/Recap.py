@@ -187,6 +187,15 @@ with home_col:
             st.switch_page("Home.py")
     st.space("small")
 
+# 
+_l, name_col, date_col, _r =st.columns([3,6,2,3])
+def updated_match_labels(): st.session_state.match_updated = True
+if st.session_state.match_name or st.session_state.match_date:
+    with name_col:
+        st.text_input("Nom de la partie:", value=(st.session_state.match_name or "Nouveau Match"), label_visibility="collapsed", on_change=updated_match_labels)
+    with date_col:
+        st.date_input("Date de la partie:", value=(st.session_state.match_date or "today"), label_visibility="collapsed", on_change=updated_match_labels)
+
 # Store the winner of the match
 winner = st.session_state.match_board["winner"]
 match_over = winner in ["A", "B"]
