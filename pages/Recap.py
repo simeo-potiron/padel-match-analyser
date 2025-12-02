@@ -148,9 +148,9 @@ def share_match():
 
 # Pop-Up: Save changes
 @st.dialog("Détails de la partie:", width="small", dismissible=True, on_dismiss="rerun")
-def save_match():
-    default_name = get_match_data(st.session_state.match_id).get("name", "Match entre copains")
-    default_date = get_match_data(st.session_state.match_id).get("date", datetime.today().strftime('%Y-%m-%d'))
+def save_match(display_score):
+    default_name = st.session_state.match_name or "Match entre copains"
+    default_date = st.session_state.match_date or datetime.today().strftime('%Y-%m-%d')
     name_col, date_col = st.columns(2)
     with name_col:
         name = st.text_input("Nommer la partie:", value=default_name, label_visibility="collapsed")
@@ -158,9 +158,9 @@ def save_match():
         date = st.date_input("Date de la partie:", value=default_date, max_value="today", label_visibility="collapsed")
     if st.button("💾"):
         if name and date:
-            match_hash = {"name": name, "date": date.strftime('%Y-%m-%d'), "board": json.dumps(st.session_state.match_board)}
+            match_hash = {"name": name, "date": date.strftime('%Y-%m-%d'), "display_score": display_score, "board": json.dumps(st.session_state.match_board)}
             upsert_match("update", match_id=st.session_state.match_id, match_hash=match_hash)
-            st.session_state.match_updated = False
+            del st.session_state["matches"] # Remove matches from the session to rescan them
             st.success("Match enregistré avec succès")
             time.sleep(2)
             st.switch_page("Home.py")
@@ -273,7 +273,7 @@ with save_button:
     # Display Save button only if needed
     if st.session_state.match_updated and st.session_state.match_admin:
         if st.button("💾 Enregistrer la partie"):
-            save_match()
+            save_match(final_sets)
                 
 # Switch display between Match stats, Players stats and Match video
 if st.session_state.recap_display["match"] == 1:

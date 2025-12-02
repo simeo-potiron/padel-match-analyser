@@ -114,8 +114,8 @@ def point_won(board, team, update_stats=True):
         elif board["match"]["points"][team] == 40:
             if match_specs["advantages"]:
                 if board["match"]["points"]['A' if team == 'B' else 'B'] == "A":
-                    for team in ["A", "B"]:
-                        board["match"]["points"][team] = 40
+                    for tm in ["A", "B"]:
+                        board["match"]["points"][tm] = 40
                 elif board["match"]["points"]['A' if team == 'B' else 'B'] == 40:
                     board["match"]["points"][team] = "A"
                 else:
@@ -190,7 +190,8 @@ def set_won(board, team, update_stats=True, is_tb=False):
     
     # Increment sets and reset games and points
     board["match"]["sets"][team] += 1
-    board["match"]["games"] = board["match"]["points"] = {"A": 0, "B": 0}
+    board["match"]["games"] = {"A": 0, "B": 0}
+    board["match"]["points"] = {"A": 0, "B": 0}
     
     # Check if the match is over
     if check_match_won(board):

@@ -33,16 +33,20 @@ st.set_page_config(page_title="Home", layout="wide")
 
 # ~~~~    Initial checks    ~~~~ #
 require_login()
-if "matches" not in st.session_state or st.session_state.matches is None:
-    get_session_matches()
 if "match_id" not in st.session_state or st.session_state.match_id is not None:
     # Initial setting of the number of displayed matches
     st.session_state.displayed_matches = DEFAULT_DISPLAYED_MATCHES
     # Set/Reset session_state match informations
     close_current_match()
+    st.rerun()
 elif "displayed_matches" not in st.session_state:
     # Initial setting of the number of displayed matches
     st.session_state.displayed_matches = DEFAULT_DISPLAYED_MATCHES
+    st.rerun()
+if "matches" not in st.session_state or st.session_state.matches is None:
+    # Refresh matches data
+    get_session_matches()
+    st.rerun()
 
 
 # ~~~~    Global HTML settings    ~~~~ #
