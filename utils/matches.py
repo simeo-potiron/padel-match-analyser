@@ -49,8 +49,7 @@ def get_session_matches():
     matches_table = AT_API.table(PADEL_BASE_ID, MATCHES_TABLE_ID)
     
     # Récupère les matchs
-    match_ids = union_lists(st.session_state.user.get("edit_matches"), st.session_state.user.get("view_matches")) 
-    formula = f"FIND(RECORD_ID(), '{', '.join(match_ids)}') > 0"
+    formula = f"""FIND('""token"":""{st.session_state.token}""', viewers) > 0"""
     all_matches = matches_table.all(formula=formula)
 
     session_matches = [{key: val for key, val in match.get("fields").items() if key in MATCH_SESSION_STATE_FIELDS} for match in all_matches]

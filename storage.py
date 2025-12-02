@@ -40,9 +40,7 @@ PADEL_BASE_ID = "appHpJoih6uBVyjyC"
 # Users table
 USERS_TABLE_ID = "tblHyMeKRpnvgx6mb"
 USER_SESSION_STATE_FIELDS = [
-    "email",
-    "edit_matches",
-    "view_matches"
+    "email"
 ]
 # Matches table
 MATCHES_TABLE_ID = "tblxB67Tdd0S2Yl5s"

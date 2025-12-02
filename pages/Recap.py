@@ -130,7 +130,7 @@ def share_match():
         </style>""", unsafe_allow_html=True)
         scroller = "<div class='scroll-container'>"
         for user in current_viewers:
-            scroller += f"<div class='item'>{plyr}</div>"
+            scroller += f"<div class='item'>{user}</div>"
         scroller += "</div>"
         st.write("Présents sur ce match:")
         st.markdown(scroller, unsafe_allow_html=True)
@@ -621,12 +621,13 @@ elif st.session_state.recap_display["video"] == 1:
             st.video(st.session_state.match_video)
         if "file_uploader_key" not in st.session_state:
             st.session_state.file_uploader_key = "file_uploader_0"
-        new_video = st.file_uploader("Lier une nouvelle vidéo à ce match:", type=["mp4", "mov"], key=st.session_state.file_uploader_key)
-        if new_video:
-            public_video_url = store_video_to_gcs(new_video)
-            if st.session_state.match_video:
-                delete_video_from_gcs(st.session_state.match_video)
-            st.session_state.match_video = public_video_url
-            upsert_match("update", match_id=st.session_state.match_id, match_hash={"video": public_video_url})
-            st.session_state.file_uploader_key = f"file_uploader_{uuid.uuid4()}"
-            st.rerun()
+        if st.session_state.match_admin:
+            new_video = st.file_uploader("Lier une nouvelle vidéo à ce match:", type=["mp4", "mov"], key=st.session_state.file_uploader_key)
+            if new_video:
+                public_video_url = store_video_to_gcs(new_video)
+                if st.session_state.match_video:
+                    delete_video_from_gcs(st.session_state.match_video)
+                st.session_state.match_video = public_video_url
+                upsert_match("update", match_id=st.session_state.match_id, match_hash={"video": public_video_url})
+                st.session_state.file_uploader_key = f"file_uploader_{uuid.uuid4()}"
+                st.rerun()
